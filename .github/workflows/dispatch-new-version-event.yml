@@ -1,0 +1,31 @@
+name: Dispatch new version event
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  dispatch-new-version-event:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Dispatch new version event
+        # TODO: change urls for repositories
+        run: |
+          CURRENT_VERSION=$(grep -m1 version package.json | awk -F: '{ print $2 }' | sed 's/[", ]//g')
+          git checkout HEAD~1
+          PREVIOUS_VERSION=$(grep -m1 version package.json | awk -F: '{ print $2 }' | sed 's/[", ]//g')
+
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            curl -X POST https://api.github.com/repos/maloun96/components/dispatches \
+              -H 'Accept: application/vnd.github.everest-preview+json' \
+              -u ${{ secrets.PERSONAL_TOKEN }} \
+              --data '{"event_type": "component-adapter-interfaces:version-changed"}'
+
+              curl -X POST https://api.github.com/repos/maloun96/sdk-component-adapter/dispatches \
+              -H 'Accept: application/vnd.github.everest-preview+json' \
+              -u ${{ secrets.PERSONAL_TOKEN }} \
+              --data '{"event_type": "component-adapter-interfaces:version-changed"}'
+          fi
